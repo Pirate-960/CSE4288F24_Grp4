@@ -11,21 +11,22 @@ import asyncio
 from bs4 import BeautifulSoup
 
 # Configurations
-DATA_FILE = "Web Scraping/Output/aym_kararlar.json"
-LOG_FILE = "Web Scraping/Output/scraping_log.txt"
+# Use an absolute path or ensure the directory exists
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'Web Scraping/Output')
+DATA_FILE = os.path.join(OUTPUT_DIR, 'aym_kararlar.json')
+LOG_FILE = os.path.join(OUTPUT_DIR, 'scraping_log.txt')
+
 ROOT_URL = "https://kararlarbilgibankasi.anayasa.gov.tr"
 TOTAL_PAGES = 1410  # Adjust as needed
 CONCURRENT_REQUESTS = 20
 
-# Directories for data and logs
-current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, 'Web Scraping', 'Output')
-log_dir = data_dir
-os.makedirs(data_dir, exist_ok=True)
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Logging setup
 logging.basicConfig(
-    filename=os.path.join(log_dir, 'scraping_log.txt'),
+    filename=LOG_FILE,
     level=logging.ERROR,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -37,15 +38,22 @@ def load_previous_data(path: str) -> Dict:
         try:
             with open(path, "r", encoding="utf-8") as file:
                 return json.load(file)
-        except json.JSONDecodeError:
-            logging.error(f"Invalid JSON format in {path}. Initializing empty data.")
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logging.error(f"Error loading data from {path}: {e}. Initializing empty data.")
             return {"Kararlar": []}
     return {"Kararlar": []}
 
 def save_data(path: str, data: Dict):
-    """Save data to a JSON file."""
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
+    """Save data to a JSON file with robust error handling."""
+    try:
+        # Ensure the directory exists before saving
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(data, file, ensure_ascii=False, indent=4)
+    except Exception as e:
+        logging.error(f"Error saving data to {path}: {e}")
+        print(f"Error saving data: {e}")
 
 def is_data_exist(data: Dict, url: str) -> bool:
     """Check if a URL already exists in the dataset."""
@@ -142,8 +150,14 @@ async def scrape_page(session, data: Dict, page_number: int):
         await asyncio.sleep(random.uniform(1, 2))  # Simulate human behavior
 
 async def main():
+    # Load existing data or initialize
     data = load_previous_data(DATA_FILE)
-    start_page = len(data.get("Kararlar", [])) // 10 + 1  # Resume from the last saved page
+    
+    # Calculate the start page based on existing data
+    decisions_per_page = 10
+    start_page = (len(data.get("Kararlar", [])) // decisions_per_page) + 1
+
+    print(f"Starting scraping from page {start_page}")
 
     async with aiohttp.ClientSession() as session:
         semaphore = asyncio.Semaphore(CONCURRENT_REQUESTS)
@@ -161,5 +175,10 @@ async def main():
 # Entry point
 if __name__ == "__main__":
     start_time = time.time()
-    asyncio.run(main())
-    print(f"Scraping finished in {time.time() - start_time:.2f} seconds.")
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logging.error(f"Unexpected error during scraping: {e}")
+        print(f"An error occurred: {e}")
+    finally:
+        print(f"Scraping finished in {time.time() - start_time:.2f} seconds.")
