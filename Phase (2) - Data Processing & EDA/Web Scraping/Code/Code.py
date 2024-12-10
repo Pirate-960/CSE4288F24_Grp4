@@ -11,9 +11,10 @@ import asyncio
 from bs4 import BeautifulSoup
 
 # Configurations
-# Use an absolute path or ensure the directory exists
+# Navigate up one level from the script directory to the parent directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'Web Scraping/Output')
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'Output')
 DATA_FILE = os.path.join(OUTPUT_DIR, 'aym_kararlar.json')
 LOG_FILE = os.path.join(OUTPUT_DIR, 'scraping_log.txt')
 
