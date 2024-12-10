@@ -11,21 +11,21 @@ import asyncio
 from bs4 import BeautifulSoup
 
 # Configurations
-DATA_FILE = "Output/aym_kararlar.json"
-LOG_FILE = "Output/scraping_log.txt"
+DATA_FILE = "Web Scraping/Output/aym_kararlar.json"
+LOG_FILE = "Web Scraping/Output/scraping_log.txt"
 ROOT_URL = "https://kararlarbilgibankasi.anayasa.gov.tr"
 TOTAL_PAGES = 1410  # Adjust as needed
 CONCURRENT_REQUESTS = 20
 
 # Directories for data and logs
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, 'output')
+data_dir = os.path.join(current_dir, 'Web Scraping', 'Output')
 log_dir = data_dir
 os.makedirs(data_dir, exist_ok=True)
 
 # Logging setup
 logging.basicConfig(
-    filename=LOG_FILE,
+    filename=os.path.join(log_dir, 'scraping_log.txt'),
     level=logging.ERROR,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
